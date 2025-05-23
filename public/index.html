@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPACE BATTLE ARENA</title>
+  <link rel="icon" href="https://assets.onecompiler.app/42swzbgaa/433g7msea/1000049145.png" type="image/png">
+  <style>
+    :root {
+      --primary: #00FFCD;
+      --secondary: #0099FF;
+      --accent: #FF00AA;
+      --dark: #0A0A2A;
+      --light: #E0F8FF;
+      --glow: 0 0 15px currentColor;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: var(--light);
+      touch-action: manipulation;
+    }
+    
+    canvas {
+      display: block;
+      margin: 0 auto;
+    }
+    
+    /* Game UI Container */
+    .game-ui {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    /* Health Bar */
+    .health-container {
+      position: absolute;
+      top: 20px;
+      height: 25px;
+      background-color: rgba(10, 10, 42, 0.7);
+      border: 2px solid var(--primary);
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: var(--glow);
+      backdrop-filter: blur(5px);
+    }
+    
+    #playerHealthBar {
+      left: 20px;
+      width: 200px;
+    }
+    
+    #enemyHealthBar {
+      right: 20px;
+      width: 200px;
+    }
+    
+    .health-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #00FF00, #00FFCD);
+      border-radius: 12px;
+      transition: width 0.3s ease, background 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .health-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+      );
+      animation: healthPulse 2s infinite;
+    }
+    
+    /* Health Text */
+    .health-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--dark);
+      text-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
+    }
+    
+    /* Room Info */
+    #roomInfo {
+      position: absolute;
+      top: 60px;
+      left: 20px;
+      background-color: rgba(10, 10, 42, 0.7);
+      border: 2px solid var(--accent);
+      border-radius: 10px;
+      padding: 8px 15px;
+      color: var(--light);
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: var(--glow);
+      backdrop-filter: blur(5px);
+    }
+    
+    /* Waiting Screen */
+    #waitingScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+    
+    #waitingScreen h1 {
+      font-size: 2rem;
+      color: var(--primary);
+      text-shadow: 0 0 10px var(--primary);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    #roomLink {
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--secondary);
+      padding: 10px;
+      border-radius: 5px;
+      margin: 20px 0;
+      width: 80%;
+      max-width: 400px;
+      text-align: center;
+      word-break: break-all;
+      cursor: pointer;
+    }
+    
+    #roomLink:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Game Over Screen */
+    #gameOver {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 30;
+    }
+    
+    #gameOver h1 {
+      font-size: 3rem;
+      color: var(--primary);
+      text-shadow: 0 0 10px var(--primary);
+      margin-bottom: 20px;
+      animation: pulse 1.5s infinite;
+    }
+    
+    .restart-btn {
+      padding: 12px 30px;
+      background: linear-gradient(45deg, var(--primary), var(--secondary));
+      border: none;
+      border-radius: 50px;
+      color: var(--dark);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px rgba(0, 255, 205, 0.5);
+      pointer-events: auto;
+    }
+    
+    .restart-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px var(--primary);
+    }
+    
+    /* Mobile Controls */
+    #mobileControls {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 10;
+      pointer-events: auto;
+    }
+    
+    .mobile-btn {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: rgba(0, 153, 255, 0.3);
+      border: 2px solid var(--secondary);
+      color: white;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 0 10px rgba(0, 153, 255, 0.5);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .mobile-btn:active {
+      background-color: rgba(0, 153, 255, 0.6);
+      transform: scale(0.95);
+    }
+    
+    /* Hit Effect */
+    .hit-effect {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 0, 0, 0.3);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 15;
+    }
+    
+    /* Animations */
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes healthPulse {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    @keyframes hitFlash {
+      0% { opacity: 0.7; }
+      100% { opacity: 0; }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .health-container {
+        height: 20px;
+      }
+      
+      #playerHealthBar, #enemyHealthBar {
+        width: 150px;
+      }
+      
+      #roomInfo {
+        font-size: 12px;
+        padding: 6px 12px;
+        top: 50px;
+      }
+      
+      #waitingScreen h1 {
+        font-size: 1.5rem;
+      }
+      
+      #gameOver h1 {
+        font-size: 2rem;
+      }
+      
+      .restart-btn {
+        padding: 10px 25px;
+        font-size: 1rem;
+      }
+      
+      .mobile-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  
+  <!-- Game UI -->
+  <div class="game-ui">
+    <div id="playerHealthBar" class="health-container">
+      <div id="playerHealth" class="health-bar"></div>
+      <div class="health-text">100%</div>
+    </div>
+    
+    <div id="enemyHealthBar" class="health-container">
+      <div id="enemyHealth" class="health-bar"></div>
+      <div class="health-text">100%</div>
+    </div>
+    
+    <div id="roomInfo">
+      ROOM: <span id="roomId">Loading...</span>
+    </div>
+    
+    <div id="hitEffect" class="hit-effect"></div>
+    
+    <div id="mobileControls">
+      <div class="mobile-btn" id="leftBtn"><i class="fas fa-arrow-left"></i></div>
+      <div class="mobile-btn" id="fireBtn"><i class="fas fa-bullseye"></i></div>
+      <div class="mobile-btn" id="rightBtn"><i class="fas fa-arrow-right"></i></div>
+    </div>
+  </div>
+  
+  <!-- Waiting Screen -->
+  <div id="waitingScreen">
+    <h1>WAITING FOR OPPONENT</h1>
+    <p>Share this link to play against a friend:</p>
+    <div id="roomLink">Loading...</div>
+    <p>Or wait for someone to join randomly</p>
+  </div>
+  
+  <!-- Game Over Screen -->
+  <div id="gameOver">
+    <h1 id="gameOverText">MISSION FAILED</h1>
+    <button class="restart-btn" id="restartBtn">PLAY AGAIN</button>
+  </div>
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Socket.io client -->
+  <script src="/socket.io/socket.io.js"></script>
+  
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Game assets
+    const assets = {
+      bullet: new Image(),
+      explosion: new Image()
+    };
+    
+    assets.bullet.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMCAyMCI+PHBhdGggZmlsbD0iI0ZGMDAwMCIgZD0iTTUgMEwxMCA1SDB6Ii8+PC9zdmc+';
+    assets.explosion.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI0ZGN0IwMCIgZD0iTTEyLDJBMTAsMTAgMCAwLDAgMiwxMkExMCwxMCAwIDAsMCAxMiwyMkExMCwxMCAwIDAsMCAyMiwxMkExMCwxMCAwIDAsMCAxMiwyTTcsNS44NkE4LDggMCAwLDEgMTIsNEE4LDggMCAwLDEgMTYuMTQsNS44NkE4LDggMCAwLDEgMTksMTJBOCw4IDAgMCwxIDE2LjE0LDE4LjE0QTgsOCAwIDAsMSAxMiwyMEE4LDggMCAwLDEgNy44NiwxOC4xNEE4LDggMCAwLDEgNSwxMkE4LDggMCAwLDEgNy44Niw1Ljg2WiIvPjwvc3ZnPg==';
+
+    // Game state
+    const state = {
+      player: { 
+        x: canvas.width / 2, 
+        y: canvas.height - 100,  // Player starts at bottom
+        width: 50, 
+        height: 50, 
+        health: 100,
+        speed: 8,
+        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+        lastFire: 0,
+        position: 'bottom' // 'bottom' or 'top'
+      },
+      enemy: null,
+      bullets: [],
+      explosions: [],
+      keys: {},
+      gameOver: false,
+      canFire: true,
+      mobileControls: {
+        left: false,
+        right: false,
+        fire: false
+      },
+      roomId: null,
+      playerId: null,
+      socket: null,
+      isFirstPlayer: false,
+      waitingForOpponent: true
+    };
+
+    // Initialize UI elements
+    const playerHealthBar = document.getElementById('playerHealth');
+    const enemyHealthBar = document.getElementById('enemyHealth');
+    const roomIdEl = document.getElementById('roomId');
+    const roomLinkEl = document.getElementById('roomLink');
+    const waitingScreen = document.getElementById('waitingScreen');
+    const gameOverScreen = document.getElementById('gameOver');
+    const gameOverText = document.getElementById('gameOverText');
+    const restartBtn = document.getElementById('restartBtn');
+    const hitEffect = document.getElementById('hitEffect');
+    
+    // Mobile controls
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const fireBtn = document.getElementById('fireBtn');
+    
+    // Event listeners
+    window.addEventListener('keydown', (e) => state.keys[e.key] = true);
+    window.addEventListener('keyup', (e) => state.keys[e.key] = false);
+    
+    // Mobile control events
+    leftBtn.addEventListener('touchstart', () => state.mobileControls.left = true);
+    leftBtn.addEventListener('touchend', () => state.mobileControls.left = false);
+    rightBtn.addEventListener('touchstart', () => state.mobileControls.right = true);
+    rightBtn.addEventListener('touchend', () => state.mobileControls.right = false);
+    fireBtn.addEventListener('touchstart', () => state.mobileControls.fire = true);
+    fireBtn.addEventListener('touchend', () => state.mobileControls.fire = false);
+    
+    // Copy room link
+    roomLinkEl.addEventListener('click', () => {
+      navigator.clipboard.writeText(roomLinkEl.textContent);
+      const originalText = roomLinkEl.textContent;
+      roomLinkEl.textContent = 'Link copied!';
+      setTimeout(() => {
+        roomLinkEl.textContent = originalText;
+      }, 2000);
+    });
+    
+    // Restart game
+    restartBtn.addEventListener('click', restartGame);
+    
+    // Connect to Socket.io server
+    function connectToServer() {
+      state.socket = io();
+      
+      // Get room ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      state.roomId = urlParams.get('id');
+      
+      if (!state.roomId) {
+        // If no room ID, create a new one and redirect
+        window.location.href = '/new';
+        return;
+      }
+      
+      roomIdEl.textContent = state.roomId;
+      roomLinkEl.textContent = window.location.href;
+      
+      // Join the room
+      state.socket.emit('joinRoom', state.roomId);
+      
+      // Handle room join response
+      state.socket.on('joinedRoom', (data) => {
+        state.playerId = data.playerId;
+        state.isFirstPlayer = data.isFirstPlayer;
+        
+        if (!state.isFirstPlayer) {
+          // Second player - game starts immediately
+          state.waitingForOpponent = false;
+          waitingScreen.style.display = 'none';
+          state.enemy = data.gameState.players[Object.keys(data.gameState.players).find(id => id !== state.playerId)];
+          // Set player position to top for second player
+          state.player.y = 100;
+          state.player.position = 'top';
+        } else {
+          state.player.position = 'bottom';
+        }
+      });
+      
+      // Handle room full
+      state.socket.on('roomFull', () => {
+        alert('This room already has 2 players. Please create a new room.');
+        window.location.href = '/new';
+      });
+      
+      // Handle game start (for first player)
+      state.socket.on('gameStarted', (gameState) => {
+        state.waitingForOpponent = false;
+        waitingScreen.style.display = 'none';
+        state.enemy = gameState.players[Object.keys(gameState.players).find(id => id !== state.playerId)];
+      });
+      
+      // Handle player movement updates
+      state.socket.on('playerMoved', (data) => {
+        if (state.enemy && data.playerId !== state.playerId) {
+          state.enemy.x = data.x;
+          state.enemy.y = data.y;
+        }
+      });
+      
+      // Handle new bullets
+      state.socket.on('bulletFired', (bullet) => {
+        state.bullets.push(bullet);
+      });
+      
+      // Handle player hit
+      state.socket.on('playerHealth', (data) => {
+        if (data.playerId === state.playerId) {
+          state.player.health = data.health;
+          updateHealthBar('player', data.health);
+          showHitEffect();
+        } else if (state.enemy) {
+          state.enemy.health = data.health;
+          updateHealthBar('enemy', data.health);
+        }
+      });
+      
+      // Handle game over
+      state.socket.on('gameOver', (data) => {
+        state.gameOver = true;
+        if (data.winnerId === state.playerId) {
+          gameOverText.textContent = 'VICTORY!';
+          gameOverText.style.color = '#00FF00';
+        } else {
+          gameOverText.textContent = 'DEFEAT!';
+          gameOverText.style.color = '#FF0000';
+        }
+        gameOverScreen.style.display = 'flex';
+      });
+      
+      // Handle opponent disconnection
+      state.socket.on('playerDisconnected', () => {
+        state.gameOver = true;
+        gameOverText.textContent = 'OPPONENT DISCONNECTED';
+        gameOverText.style.color = '#FFFF00';
+        gameOverScreen.style.display = 'flex';
+      });
+      
+      // Handle explosions
+      state.socket.on('explosion', (explosion) => {
+        state.explosions.push({
+          ...explosion,
+          createdAt: Date.now()
+        });
+      });
+    }
+    
+    // Game functions
+    function playerFire() {
+      const now = Date.now();
+      if ((state.keys[' '] || state.mobileControls.fire) && now - state.player.lastFire > 300 && !state.gameOver && !state.waitingForOpponent) {
+        // Determine bullet direction based on player position
+        const direction = state.player.position === 'bottom' ? -1 : 1;
+        
+        state.socket.emit('fireBullet', {
+          roomId: state.roomId,
+          playerId: state.playerId,
+          x: state.player.x,
+          y: state.player.y,
+          direction: direction
+        });
+        state.player.lastFire = now;
+      }
+    }
+    
+    function updatePlayer() {
+      if (state.waitingForOpponent || state.gameOver) return;
+      
+      // Keyboard controls
+      if (state.keys['ArrowLeft'] || state.mobileControls.left) state.player.x -= state.player.speed;
+      if (state.keys['ArrowRight'] || state.mobileControls.right) state.player.x += state.player.speed;
+      if (state.keys['ArrowUp']) state.player.y -= state.player.speed;
+      if (state.keys['ArrowDown']) state.player.y += state.player.speed;
+      
+      // Boundary checks
+      state.player.x = Math.max(state.player.width / 2, Math.min(state.player.x, canvas.width - state.player.width / 2));
+      
+      // Vertical boundaries based on position
+      if (state.player.position === 'bottom') {
+        state.player.y = Math.max(canvas.height - 150, Math.min(state.player.y, canvas.height - 50));
+      } else {
+        state.player.y = Math.max(50, Math.min(state.player.y, 150));
+      }
+      
+      // Send position update to server
+      if (state.socket) {
+        state.socket.emit('playerUpdate', {
+          roomId: state.roomId,
+          playerId: state.playerId,
+          x: state.player.x,
+          y: state.player.y
+        });
+      }
+    }
+    
+    function updateBullets() {
+      // Update bullet positions
+      for (let i = state.bullets.length - 1; i >= 0; i--) {
+        const bullet = state.bullets[i];
+        
+        // Move bullet based on its direction
+        bullet.y += bullet.speed * bullet.direction;
+        
+        // Check for collision with enemy
+        if (bullet.playerId === state.playerId && state.enemy && isColliding(bullet, state.enemy)) {
+          state.socket.emit('hitPlayer', {
+            roomId: state.roomId,
+            playerId: Object.keys(state.enemy).find(id => id !== state.playerId),
+            bulletId: bullet.id
+          });
+          state.bullets.splice(i, 1);
+          continue;
+        }
+        
+        // Check for collision with player
+        if (bullet.playerId !== state.playerId && isColliding(bullet, state.player)) {
+          state.socket.emit('hitPlayer', {
+            roomId: state.roomId,
+            playerId: state.playerId,
+            bulletId: bullet.id
+          });
+          state.bullets.splice(i, 1);
+          continue;
+        }
+        
+        // Remove bullets that are off screen
+        if (bullet.y < 0 || bullet.y > canvas.height) {
+          state.bullets.splice(i, 1);
+        }
+      }
+    }
+    
+    function updateExplosions() {
+      for (let i = state.explosions.length - 1; i >= 0; i--) {
+        const explosion = state.explosions[i];
+        const elapsed = Date.now() - explosion.createdAt;
+        
+        if (elapsed > 500) {
+          state.explosions.splice(i, 1);
+        } else {
+          explosion.alpha = 1 - (elapsed / 500);
+          explosion.size = 40 + (elapsed / 500 * 20);
+        }
+      }
+    }
+    
+    function isColliding(obj1, obj2) {
+      return obj1.x < obj2.x + obj2.width / 2 &&
+             obj1.x + obj1.width / 2 > obj2.x &&
+             obj1.y < obj2.y + obj2.height / 2 &&
+             obj1.y + obj1.height / 2 > obj2.y;
+    }
+    
+    function updateHealthBar(target, health) {
+      const bar = target === 'player' ? playerHealthBar : enemyHealthBar;
+      const percent = Math.max(0, Math.min(100, health));
+      
+      bar.style.width = `${percent}%`;
+      bar.nextElementSibling.textContent = `${percent}%`;
+      
+      // Update health bar color
+      if (percent > 60) {
+        bar.style.background = 'linear-gradient(90deg, #00FF00, #00FFCD)';
+      } else if (percent > 30) {
+        bar.style.background = 'linear-gradient(90deg, #FFFF00, #FFCC00)';
+      } else {
+        bar.style.background = 'linear-gradient(90deg, #FF0000, #FF3300)';
+      }
+    }
+    
+    function showHitEffect() {
+      hitEffect.style.opacity = '0.7';
+      hitEffect.style.animation = 'none';
+      void hitEffect.offsetWidth; // Trigger reflow
+      hitEffect.style.animation = 'hitFlash 0.3s forwards';
+    }
+    
+    function restartGame() {
+      window.location.href = '/new';
+    }
+    
+    // Rendering functions
+    function drawPlayer() {
+      ctx.save();
+      ctx.shadowColor = state.player.color;
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = state.player.color;
+      ctx.beginPath();
+      
+      // Draw triangle pointing in direction of fire
+      if (state.player.position === 'bottom') {
+        // Point up
+        ctx.moveTo(state.player.x, state.player.y - 25);
+        ctx.lineTo(state.player.x - 20, state.player.y + 15);
+        ctx.lineTo(state.player.x + 20, state.player.y + 15);
+      } else {
+        // Point down
+        ctx.moveTo(state.player.x, state.player.y + 25);
+        ctx.lineTo(state.player.x - 20, state.player.y - 15);
+        ctx.lineTo(state.player.x + 20, state.player.y - 15);
+      }
+      
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    
+    function drawEnemy() {
+      if (!state.enemy) return;
+      
+      ctx.save();
+      ctx.shadowColor = state.enemy.color;
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = state.enemy.color;
+      ctx.beginPath();
+      
+      // Draw triangle pointing in opposite direction of player
+      if (state.player.position === 'bottom') {
+        // Enemy at top pointing down
+        ctx.moveTo(state.enemy.x, state.enemy.y + 25);
+        ctx.lineTo(state.enemy.x - 20, state.enemy.y - 15);
+        ctx.lineTo(state.enemy.x + 20, state.enemy.y - 15);
+      } else {
+        // Enemy at bottom pointing up
+        ctx.moveTo(state.enemy.x, state.enemy.y - 25);
+        ctx.lineTo(state.enemy.x - 20, state.enemy.y + 15);
+        ctx.lineTo(state.enemy.x + 20, state.enemy.y + 15);
+      }
+      
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    
+    function drawBullets() {
+      state.bullets.forEach(bullet => {
+        ctx.save();
+        ctx.shadowColor = bullet.playerId === state.playerId ? '#FF0000' : '#FFFF00';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = bullet.playerId === state.playerId ? '#FF0000' : '#FFFF00';
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, bullet.width / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+    
+    function drawExplosions() {
+      state.explosions.forEach(explosion => {
+        ctx.save();
+        ctx.globalAlpha = explosion.alpha;
+        ctx.drawImage(
+          assets.explosion,
+          explosion.x - explosion.size / 2,
+          explosion.y - explosion.size / 2,
+          explosion.size,
+          explosion.size
+        );
+        ctx.restore();
+      });
+    }
+    
+    function drawBackground() {
+      ctx.fillStyle = 'rgba(10, 10, 42, 0.2)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw starfield
+      ctx.fillStyle = 'white';
+      for (let i = 0; i < 100; i++) {
+        const x = Math.random() * canvas.width;
+        const y = (Math.random() * canvas.height + (Date.now() * 0.05)) % canvas.height;
+        const size = Math.random() * 2;
+        ctx.fillRect(x, y, size, size);
+      }
+    }
+    
+    // Main game loop
+    let gameLoopId;
+    function gameLoop() {
+      drawBackground();
+      updatePlayer();
+      playerFire();
+      updateBullets();
+      updateExplosions();
+      
+      drawEnemy();
+      drawBullets();
+      drawExplosions();
+      drawPlayer();
+      
+      gameLoopId = requestAnimationFrame(gameLoop);
+    }
+    
+    // Start the game
+    connectToServer();
+    gameLoop();
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      // Maintain player position relative to screen edges
+      if (state.player.position === 'bottom') {
+        state.player.y = canvas.height - 100;
+      } else {
+        state.player.y = 100;
+      }
+      state.player.x = canvas.width / 2;
+    });
+  </script>
+</body>
+</html>
