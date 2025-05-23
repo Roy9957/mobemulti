@@ -158,6 +158,8 @@
       text-align: center;
       word-break: break-all;
       cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
     }
     
     #roomLink:hover {
@@ -340,7 +342,7 @@
     <h1>WAITING FOR OPPONENT</h1>
     <p>Your ROOM ID:</p>
     <div id="roomLink">Loading...</div>
-    <p>Wait for someone:)</p>
+    <p>Share this ID with your friend</p>
   </div>
   
   <!-- Game Over Screen -->
@@ -355,7 +357,6 @@
   <!-- Socket.io client -->
   <script src="/socket.io/socket.io.js"></script>
   
-  
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -364,10 +365,14 @@
 
     // Game assets
     const assets = {
+      player: new Image(),
+      enemy: new Image(),
       bullet: new Image(),
       explosion: new Image()
     };
     
+    assets.player.src = 'assets/player.png';
+    assets.enemy.src = 'assets/enemy.png';
     assets.bullet.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMCAyMCI+PHBhdGggZmlsbD0iI0ZGMDAwMCIgZD0iTTUgMEwxMCA1SDB6Ii8+PC9zdmc+';
     assets.explosion.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI0ZGN0IwMCIgZD0iTTEyLDJBMTAsMTAgMCAwLDAgMiwxMkExMCwxMCAwIDAsMCAxMiwyMkExMCwxMCAwIDAsMCAyMiwxMkExMCwxMCAwIDAsMCAxMiwyTTcsNS44NkE4LDggMCAwLDEgMTIsNEE4LDggMCAwLDEgMTYuMTQsNS44NkE4LDggMCAwLDEgMTksMTJBOCw4IDAgMCwxIDE2LjE0LDE4LjE0QTgsOCAwIDAsMSAxMiwyMEE4LDggMCAwLDEgNy44NiwxOC4xNEE4LDggMCAwLDEgNSwxMkE4LDggMCAwLDEgNy44Niw1Ljg2WiIvPjwvc3ZnPg==';
 
@@ -380,7 +385,6 @@
         height: 50, 
         health: 100,
         speed: 8,
-        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
         lastFire: 0,
         position: 'bottom' // 'bottom' or 'top'
       },
@@ -434,7 +438,7 @@
     roomLinkEl.addEventListener('click', () => {
       navigator.clipboard.writeText(roomLinkEl.textContent);
       const originalText = roomLinkEl.textContent;
-      roomLinkEl.textContent = 'Link copied!';
+      roomLinkEl.textContent = 'Copied!';
       setTimeout(() => {
         roomLinkEl.textContent = originalText;
       }, 2000);
@@ -458,7 +462,7 @@
       }
       
       roomIdEl.textContent = state.roomId;
-      roomLinkEl.textContent = window.location.href;
+      roomLinkEl.textContent = state.roomId; // Only show room ID, not full URL
       
       // Join the room
       state.socket.emit('joinRoom', state.roomId);
@@ -686,26 +690,29 @@
     // Rendering functions
     function drawPlayer() {
       ctx.save();
-      ctx.shadowColor = state.player.color;
+      ctx.shadowColor = '#00FFCD';
       ctx.shadowBlur = 15;
-      ctx.fillStyle = state.player.color;
-      ctx.beginPath();
       
-      // Draw triangle pointing in direction of fire
       if (state.player.position === 'bottom') {
-        // Point up
-        ctx.moveTo(state.player.x, state.player.y - 25);
-        ctx.lineTo(state.player.x - 20, state.player.y + 15);
-        ctx.lineTo(state.player.x + 20, state.player.y + 15);
+        // Draw player ship at bottom (pointing up)
+        ctx.drawImage(
+          assets.player,
+          state.player.x - state.player.width / 2,
+          state.player.y - state.player.height / 2,
+          state.player.width,
+          state.player.height
+        );
       } else {
-        // Point down
-        ctx.moveTo(state.player.x, state.player.y + 25);
-        ctx.lineTo(state.player.x - 20, state.player.y - 15);
-        ctx.lineTo(state.player.x + 20, state.player.y - 15);
+        // Draw enemy ship at top (pointing down)
+        ctx.drawImage(
+          assets.enemy,
+          state.player.x - state.player.width / 2,
+          state.player.y - state.player.height / 2,
+          state.player.width,
+          state.player.height
+        );
       }
       
-      ctx.closePath();
-      ctx.fill();
       ctx.restore();
     }
     
@@ -713,26 +720,29 @@
       if (!state.enemy) return;
       
       ctx.save();
-      ctx.shadowColor = state.enemy.color;
+      ctx.shadowColor = '#FF00AA';
       ctx.shadowBlur = 15;
-      ctx.fillStyle = state.enemy.color;
-      ctx.beginPath();
       
-      // Draw triangle pointing in opposite direction of player
       if (state.player.position === 'bottom') {
-        // Enemy at top pointing down
-        ctx.moveTo(state.enemy.x, state.enemy.y + 25);
-        ctx.lineTo(state.enemy.x - 20, state.enemy.y - 15);
-        ctx.lineTo(state.enemy.x + 20, state.enemy.y - 15);
+        // Draw enemy ship at top (pointing down)
+        ctx.drawImage(
+          assets.enemy,
+          state.enemy.x - state.enemy.width / 2,
+          state.enemy.y - state.enemy.height / 2,
+          state.enemy.width,
+          state.enemy.height
+        );
       } else {
-        // Enemy at bottom pointing up
-        ctx.moveTo(state.enemy.x, state.enemy.y - 25);
-        ctx.lineTo(state.enemy.x - 20, state.enemy.y + 15);
-        ctx.lineTo(state.enemy.x + 20, state.enemy.y + 15);
+        // Draw player ship at bottom (pointing up)
+        ctx.drawImage(
+          assets.player,
+          state.enemy.x - state.enemy.width / 2,
+          state.enemy.y - state.enemy.height / 2,
+          state.enemy.width,
+          state.enemy.height
+        );
       }
       
-      ctx.closePath();
-      ctx.fill();
       ctx.restore();
     }
     
