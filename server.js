@@ -85,30 +85,30 @@ io.on('connection', (socket) => {
   });
 
   // Handle firing bullets
-socket.on('fireBullet', (data) => {
-  const { roomId, playerId, x, y, direction } = data;
-  if (rooms[roomId] && rooms[roomId].players[playerId]) {
-    const now = Date.now();
-    const player = rooms[roomId].players[playerId];
-    
-    if (now - player.lastFire > 300) { // Rate limiting
-      player.lastFire = now;
-      const bullet = {
-        x,
-        y,
-        width: 8,
-        height: 20,
-        speed: 10,
-        playerId,
-        direction, // Add direction to bullet
-        id: shortid.generate()
-      };
+  socket.on('fireBullet', (data) => {
+    const { roomId, playerId, x, y, direction } = data;
+    if (rooms[roomId] && rooms[roomId].players[playerId]) {
+      const now = Date.now();
+      const player = rooms[roomId].players[playerId];
       
-      rooms[roomId].bullets.push(bullet);
-      io.to(roomId).emit('bulletFired', bullet);
+      if (now - player.lastFire > 300) { // Rate limiting
+        player.lastFire = now;
+        const bullet = {
+          x,
+          y,
+          width: 8,
+          height: 20,
+          speed: 10,
+          playerId,
+          direction,
+          id: shortid.generate()
+        };
+        
+        rooms[roomId].bullets.push(bullet);
+        io.to(roomId).emit('bulletFired', bullet);
+      }
     }
-  }
-});
+  });
 
   // Handle player hit
   socket.on('hitPlayer', (data) => {
@@ -183,6 +183,11 @@ function createPlayer() {
 app.get('/new', (req, res) => {
   const roomId = generateRoomId();
   res.redirect(`/play?id=${roomId}`);
+});
+
+// Root route that redirects to /new
+app.get('/', (req, res) => {
+  res.redirect('/new');
 });
 
 // Join a game room
