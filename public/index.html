@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MOBE MULTI SPACE</title>
-  <link rel="icon" href="assets/player.png" type="image/png">
+  <link rel="icon" href="player.png" type="image/png">
   <style>
     :root {
       --primary: #00FFCD;
@@ -58,6 +58,11 @@
       overflow: hidden;
       box-shadow: var(--glow);
       backdrop-filter: blur(5px);
+      transition: transform 0.2s ease;
+    }
+    
+    .health-container:hover {
+      transform: scale(1.05);
     }
     
     #playerHealthBar {
@@ -106,6 +111,7 @@
       font-weight: bold;
       color: var(--dark);
       text-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
+      transition: font-size 0.2s ease;
     }
     
     /* Room Info */
@@ -122,6 +128,11 @@
       font-weight: bold;
       box-shadow: var(--glow);
       backdrop-filter: blur(5px);
+      transition: transform 0.2s ease;
+    }
+    
+    #roomInfo:hover {
+      transform: translateY(-3px);
     }
     
     /* Waiting Screen */
@@ -145,6 +156,7 @@
       text-shadow: 0 0 10px var(--primary);
       margin-bottom: 20px;
       text-align: center;
+      animation: pulse 2s infinite;
     }
     
     #roomLink {
@@ -160,10 +172,12 @@
       cursor: pointer;
       font-family: 'Orbitron', sans-serif;
       font-size: 1.2rem;
+      transition: background-color 0.3s ease, transform 0.2s ease;
     }
     
     #roomLink:hover {
       background-color: rgba(255, 255, 255, 0.2);
+      transform: scale(1.02);
     }
     
     /* Game Over Screen */
@@ -179,6 +193,7 @@
       justify-content: center;
       align-items: center;
       z-index: 30;
+      animation: fadeIn 0.5s ease;
     }
     
     #gameOver h1 {
@@ -207,6 +222,7 @@
     .restart-btn:hover {
       transform: scale(1.05);
       box-shadow: 0 0 25px var(--primary);
+      background: linear-gradient(45deg, var(--secondary), var(--primary));
     }
     
     /* Mobile Controls */
@@ -237,6 +253,12 @@
       box-shadow: 0 0 10px rgba(0, 153, 255, 0.5);
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    
+    .mobile-btn:hover {
+      background-color: rgba(0, 153, 255, 0.5);
+      transform: scale(1.1);
     }
     
     .mobile-btn:active {
@@ -255,6 +277,15 @@
       z-index: 15;
     }
     
+    /* Particle Effect for Explosions */
+    .explosion-particle {
+      position: absolute;
+      background: radial-gradient(circle, rgba(255, 255, 0, 0.8), transparent);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: particleFade 0.5s ease-out forwards;
+    }
+    
     /* Animations */
     @keyframes pulse {
       0% { transform: scale(1); }
@@ -270,6 +301,16 @@
     @keyframes hitFlash {
       0% { opacity: 0.7; }
       100% { opacity: 0; }
+    }
+    
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    
+    @keyframes particleFade {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0); opacity: 0; }
     }
     
     /* Responsive */
@@ -305,6 +346,38 @@
         width: 50px;
         height: 50px;
         font-size: 20px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .health-container {
+        top: 10px;
+        height: 18px;
+      }
+      
+      #playerHealthBar, #enemyHealthBar {
+        width: 120px;
+      }
+      
+      .health-text {
+        font-size: 10px;
+      }
+      
+      #roomInfo {
+        font-size: 10px;
+        top: 40px;
+        padding: 5px 10px;
+      }
+      
+      #mobileControls {
+        bottom: 10px;
+        padding: 0 10px;
+      }
+      
+      .mobile-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
       }
     }
   </style>
@@ -414,12 +487,15 @@
     const waitingScreen = document.getElementById('waitingScreen');
     const gameOverScreen = document.getElementById('gameOver');
     const gameOverText = document.getElementById('gameOverText');
-    const restartBtn = document.getElementById('restartBtn');
-    const hitEffect = document.getElementById('hitEffect');
+    const restartBtn = document.getElement('button');
+    restartBtn.classList.add('restart-btn');
+    restartBtn.id = 'restartBtn';
+    gameOverScreen.appendChild(restartBtn);
+
     
     // Mobile controls
     const leftBtn = document.getElementById('leftBtn');
-    const rightBtn = document.getElementById('rightBtn');
+    const rightBtn = document.getElementsById('rightBtn');
     const fireBtn = document.getElementById('fireBtn');
     
     // Event listeners
