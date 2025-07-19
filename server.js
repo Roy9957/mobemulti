@@ -3,10 +3,23 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const shortid = require('shortid');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+
+// Configure CORS for Express
+app.use(cors({
+  origin: '*' // You can specify specific origins instead of '*' for production
+}));
+
+// Configure Socket.IO with CORS
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -179,7 +192,7 @@ function createPlayer() {
   };
 }
 
-// ✅ NEW: Check if room exists
+// Check if room exists
 app.get('/check', (req, res) => {
   const roomId = req.query.id;
   if (!roomId || typeof roomId !== 'string') {
