@@ -179,6 +179,17 @@ function createPlayer() {
   };
 }
 
+// ✅ NEW: Check if room exists
+app.get('/check', (req, res) => {
+  const roomId = req.query.id;
+  if (!roomId || typeof roomId !== 'string') {
+    return res.json({ exists: false });
+  }
+
+  const exists = !!rooms[roomId];
+  res.json({ exists });
+});
+
 // Create a new game room
 app.get('/new', (req, res) => {
   const roomId = generateRoomId();
@@ -203,4 +214,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
